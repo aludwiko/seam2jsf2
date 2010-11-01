@@ -2,3 +2,106 @@ This jars can run under jsf2 beanvalidator.
 You can try jsf2+hibernate3.6+hibernate validator4.1+primefaces2.2
 This can't support richfaces3 and can run richfaces4
 This can't support seam debug.You can not include jboss-seam-debug.jar
+
+
+changes:
+
+1.  MultipartFilter change to manual Install
+    LoggingFilter change to manual Install
+    RedirectFilter change to manual Install
+    ExceptionFilter change to manual Install
+
+    If you use it You must install in components.xml
+    
+2.  TopicConnection ManagedQueueSender ManagedTopicPublisher QueueConnection can use independency and can use spring's bean
+    eg:
+       <component class="org.jboss.seam.remoting.messaging.SubscriptionRegistry" installed="true"/>
+       <component class="org.jboss.seam.jms.TopicConnection">
+    	    <property name="springTopicConnectionFactory">#{jmsFactory}</property>
+       </component>   
+       <component name="myTopicPublisher" class="org.jboss.seam.jms.ManagedTopicPublisher">
+          <property name="springTopic">#{defaultTopic}</property>
+       </component>
+
+    It's not necessary to set allowedTopics. If you set you just can subscribe the setting's topic.
+    
+3.  change EntityConverter to Event scope
+
+    PDF and GraphicImage should add jsessionid. I just add to barcode. I have no time to test :)
+    
+4.  add custom define exception handle in pages.xml
+    eg:
+    <exception>
+		   <handle-class class-name="com.yofc.fis.util.YofcJsfExceptionHandle"/>
+	  </exception>
+	  
+	  and 
+	  
+	  YofcJsfExceptionHandle.java:
+	  
+	  import javax.faces.application.FacesMessage;
+		import javax.faces.context.ExternalContext;
+		import javax.faces.context.FacesContext;
+		import javax.faces.context.PartialResponseWriter;
+		import javax.faces.event.PhaseId;
+		import org.granite.logging.Logger;
+		import org.jboss.seam.exception.ExceptionHandler;
+
+	  public class YofcJsfExceptionHandle extends ExceptionHandler{
+		private static final Logger log = Logger.getLogger(YofcJsfExceptionHandle.class);
+		@Override
+		public void handle(Exception e) throws Exception {
+				FacesContext facesContext=FacesContext.getCurrentInstance();
+				ExternalContext externalContext = facesContext.getExternalContext();
+				if (facesContext.getPartialViewContext().isAjaxRequest())
+		        {
+					log.info("handle PartialView error");
+				PartialResponseWriter writer = facesContext.getPartialViewContext().getPartialResponseWriter();
+				   if(!PhaseId.RENDER_RESPONSE.equals(facesContext.getCurrentPhaseId()))
+				   {
+			           externalContext.setResponseContentType("text/xml");
+			           externalContext.addResponseHeader("Cache-Control", "no-cache");
+			           writer.startDocument();
+				   }
+				   String tipType="info";
+				   String tipTitle="info";
+				   if(YofcErrorException.class.isInstance(e))
+				   {
+					   tipType="error";
+					   tipTitle="error";
+				   }
+				   else if(YofcWarnException.class.isInstance(e))
+				   {
+					   tipType="warn";
+					   tipTitle="warn";
+				   }
+				   
+		           writer.startEval();
+		           String js="jQuery(function(){jQuery.gritter.add({title:'"+tipTitle+"',text:'"+e.getMessage()+"',image:'/testjsf/javax.faces.resource/growl/assets/"+tipType+".png.jsf?ln=primefaces',sticky:false});});";
+		           writer.write(js);
+		           writer.endEval();
+		           writer.endDocument();
+		           writer.flush();
+		           facesContext.responseComplete();
+		        }
+						else
+						{
+							log.info("blabla");
+							 FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_FATAL,"blabla", e.toString()));
+						}
+			}
+		
+			@Override
+			public boolean isHandler(Exception e) {
+				if(YofcException.class.isInstance(e) || YofcErrorException.class.isInstance(e) || YofcWarnException.class.isInstance(e))
+					return true;
+				return false;
+			}
+		
+		}
+	  
+5.  It should can run in glassfish3.1 but i don't test it.	  
+    
+
+
+
