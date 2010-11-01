@@ -1,4 +1,4 @@
 This jars can run under jsf2 beanvalidator.
-You can try jsf2+hibernate2.6+hibernate validator4.1+primefaces2.2
+You can try jsf2+hibernate3.6+hibernate validator4.1+primefaces2.2
 This can't support richfaces3 and can run richfaces4
 This can't support seam debug.You can not include jboss-seam-debug.jar
