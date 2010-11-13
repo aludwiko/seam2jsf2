@@ -241,7 +241,7 @@ public class SeamPhaseListener implements PhaseListener
       }
       else if ( event.getPhaseId() == PROCESS_VALIDATIONS )
       {
-    	 handleException(facesContext);
+         handleException(facesContext);
          afterProcessValidations(facesContext);
       }
             
@@ -250,8 +250,17 @@ public class SeamPhaseListener implements PhaseListener
       FacesMessages.afterPhase();
       
       handleTransactionsAfterPhase(event);
-            
-      if ( event.getPhaseId() == RENDER_RESPONSE )
+      if ( event.getPhaseId() == RESTORE_VIEW )
+      {
+         if(hasExceptions(facesContext))
+         {
+            handleException(facesContext);
+            afterRenderResponse(facesContext);
+            if(!facesContext.getResponseComplete())
+               facesContext.responseComplete();
+         }
+      }
+      else if ( event.getPhaseId() == RENDER_RESPONSE )
       {
          handleException(facesContext);
          afterRenderResponse(facesContext);
@@ -277,7 +286,7 @@ public class SeamPhaseListener implements PhaseListener
       }
       else if (event.getPhaseId() == PROCESS_VALIDATIONS) 
       {
-    	 handleException(event.getFacesContext());
+         handleException(event.getFacesContext());
          afterProcessValidations(event.getFacesContext());
       }
 
@@ -292,6 +301,13 @@ public class SeamPhaseListener implements PhaseListener
          // writeConversationIdToResponse(
          // facesContext.getExternalContext().getResponse() );
          afterRenderResponse(event.getFacesContext());
+      }
+      else if ( event.getPhaseId() == RESTORE_VIEW )
+      {
+         handleException(event.getFacesContext());
+         afterRenderResponse(event.getFacesContext());
+         if(!event.getFacesContext().getResponseComplete())
+            event.getFacesContext().responseComplete();
       }
       else if ( (null != portletPhase && "ActionPhase".equals(portletPhase.toString()) )
              && (event.getPhaseId() == INVOKE_APPLICATION
@@ -402,7 +418,7 @@ public class SeamPhaseListener implements PhaseListener
       ConversationPropagation.instance().restoreConversationId(parameters);
       boolean conversationFound = Manager.instance().restoreConversation();
       FacesLifecycle.resumeConversation( facesContext.getExternalContext() );
-      if(handleException(facesContext))
+      if(hasExceptions(facesContext))
       {
          return;
       }
@@ -640,9 +656,14 @@ public class SeamPhaseListener implements PhaseListener
          throw new IllegalStateException("Could not commit transaction", e);
       }
    }
+   private boolean hasExceptions(FacesContext facesContext)
+   {
+      return facesContext.getExceptionHandler().getUnhandledExceptionQueuedEvents().iterator().hasNext();
+   }
    public boolean handleException(FacesContext facesContext)
    {
       ExceptionQueuedEvent handled = null;
+      boolean exHandled=false;
       for (Iterator<ExceptionQueuedEvent> i = facesContext.getExceptionHandler().getUnhandledExceptionQueuedEvents().iterator(); i.hasNext(); )
       {
          handled = i.next();
@@ -654,7 +675,7 @@ public class SeamPhaseListener implements PhaseListener
          {
             Exceptions.instance().handle(new Exception(rex));
             i.remove();
-            return true;
+            exHandled = true;
          }
          catch (Exception e)
          {
@@ -675,7 +696,7 @@ public class SeamPhaseListener implements PhaseListener
                   writer.flush();
                   facesContext.responseComplete();
                   i.remove();
-                  return true;
+                  exHandled = true;
                }
             }
             catch (Exception e1)
@@ -684,7 +705,7 @@ public class SeamPhaseListener implements PhaseListener
             }
          }
       }
-      return false;
+      return exHandled;
    }
    private Throwable getRootCause(Throwable t) {
 
