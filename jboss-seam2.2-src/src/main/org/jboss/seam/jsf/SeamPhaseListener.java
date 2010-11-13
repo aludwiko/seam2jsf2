@@ -111,7 +111,14 @@ public class SeamPhaseListener implements PhaseListener
    public void beforePhase(PhaseEvent event)
    {   
       log.trace( "before phase: " + event.getPhaseId() );
-      
+      if(hasExceptions(event.getFacesContext()))
+      {
+         handleException(event.getFacesContext());
+         afterRenderResponse(event.getFacesContext());
+         if(!event.getFacesContext().getResponseComplete())
+            event.getFacesContext().responseComplete();
+         return;
+      }
       FacesLifecycle.setPhaseId( event.getPhaseId() );
       try
       {
@@ -158,7 +165,6 @@ public class SeamPhaseListener implements PhaseListener
    
    private void beforePortletPhase(PhaseEvent event)
    {
-
       FacesContext facesContext = event.getFacesContext();
       
       boolean notInitialised=false;
@@ -189,6 +195,15 @@ public class SeamPhaseListener implements PhaseListener
    public void afterPhase(PhaseEvent event)
    {
       log.trace( "after phase: " + event.getPhaseId() );
+      if(hasExceptions(event.getFacesContext()))
+      {
+         handleException(event.getFacesContext());
+         handleTransactionsAfterPhase(event);
+         afterRenderResponse(event.getFacesContext());
+         if(!event.getFacesContext().getResponseComplete())
+            event.getFacesContext().responseComplete();
+         return;
+      }
       try
       {
          raiseEventsAfterPhase(event);
@@ -227,7 +242,6 @@ public class SeamPhaseListener implements PhaseListener
 
    private void afterServletPhase(PhaseEvent event)
    {
-  
       FacesContext facesContext = event.getFacesContext();
       
       if ( event.getPhaseId() == RESTORE_VIEW )
@@ -236,12 +250,10 @@ public class SeamPhaseListener implements PhaseListener
       }      
       else if ( event.getPhaseId() == INVOKE_APPLICATION )
       {
-         handleException(facesContext);
          afterInvokeApplication();
       }
       else if ( event.getPhaseId() == PROCESS_VALIDATIONS )
       {
-         handleException(facesContext);
          afterProcessValidations(facesContext);
       }
             
@@ -250,19 +262,8 @@ public class SeamPhaseListener implements PhaseListener
       FacesMessages.afterPhase();
       
       handleTransactionsAfterPhase(event);
-      if ( event.getPhaseId() == RESTORE_VIEW )
+      if ( event.getPhaseId() == RENDER_RESPONSE )
       {
-         if(hasExceptions(facesContext))
-         {
-            handleException(facesContext);
-            afterRenderResponse(facesContext);
-            if(!facesContext.getResponseComplete())
-               facesContext.responseComplete();
-         }
-      }
-      else if ( event.getPhaseId() == RENDER_RESPONSE )
-      {
-         handleException(facesContext);
          afterRenderResponse(facesContext);
       }
       else if ( facesContext.getResponseComplete() )
@@ -281,12 +282,10 @@ public class SeamPhaseListener implements PhaseListener
       }
       else if (event.getPhaseId() == INVOKE_APPLICATION) 
       {
-         handleException(event.getFacesContext());
          afterInvokeApplication();
       }
       else if (event.getPhaseId() == PROCESS_VALIDATIONS) 
       {
-         handleException(event.getFacesContext());
          afterProcessValidations(event.getFacesContext());
       }
 
@@ -297,14 +296,12 @@ public class SeamPhaseListener implements PhaseListener
 
       if (event.getPhaseId() == RENDER_RESPONSE) 
       {
-         handleException(event.getFacesContext());
          // writeConversationIdToResponse(
          // facesContext.getExternalContext().getResponse() );
          afterRenderResponse(event.getFacesContext());
       }
       else if ( event.getPhaseId() == RESTORE_VIEW )
       {
-         handleException(event.getFacesContext());
          afterRenderResponse(event.getFacesContext());
          if(!event.getFacesContext().getResponseComplete())
             event.getFacesContext().responseComplete();
@@ -418,10 +415,6 @@ public class SeamPhaseListener implements PhaseListener
       ConversationPropagation.instance().restoreConversationId(parameters);
       boolean conversationFound = Manager.instance().restoreConversation();
       FacesLifecycle.resumeConversation( facesContext.getExternalContext() );
-      if(hasExceptions(facesContext))
-      {
-         return;
-      }
       postRestorePage(facesContext, parameters, conversationFound);
    }
 
@@ -660,10 +653,9 @@ public class SeamPhaseListener implements PhaseListener
    {
       return facesContext.getExceptionHandler().getUnhandledExceptionQueuedEvents().iterator().hasNext();
    }
-   public boolean handleException(FacesContext facesContext)
+   public void handleException(FacesContext facesContext)
    {
       ExceptionQueuedEvent handled = null;
-      boolean exHandled=false;
       for (Iterator<ExceptionQueuedEvent> i = facesContext.getExceptionHandler().getUnhandledExceptionQueuedEvents().iterator(); i.hasNext(); )
       {
          handled = i.next();
@@ -675,7 +667,6 @@ public class SeamPhaseListener implements PhaseListener
          {
             Exceptions.instance().handle(new Exception(rex));
             i.remove();
-            exHandled = true;
          }
          catch (Exception e)
          {
@@ -683,12 +674,13 @@ public class SeamPhaseListener implements PhaseListener
             {
                if (facesContext.getPartialViewContext().isAjaxRequest())//override jsf partial exception handle
                {
-                  externalContext.setResponseContentType("text/xml");
-                  externalContext.addResponseHeader("Cache-Control", "no-cache");
-                  PartialResponseWriter writer = facesContext.getPartialViewContext().getPartialResponseWriter();
-                  
-                  writer.startDocument();
-                  
+                  PartialResponseWriter writer = facesContext.getPartialViewContext().getPartialResponseWriter(); 
+                  if(!PhaseId.RENDER_RESPONSE.equals(facesContext.getCurrentPhaseId()))
+                  {
+                     externalContext.setResponseContentType("text/xml");
+                     externalContext.addResponseHeader("Cache-Control", "no-cache");
+                     writer.startDocument();
+                  }
                   writer.startEval();
                   writer.write("alert('error:" + rex.toString() + "');");
                   writer.endEval();
@@ -696,7 +688,6 @@ public class SeamPhaseListener implements PhaseListener
                   writer.flush();
                   facesContext.responseComplete();
                   i.remove();
-                  exHandled = true;
                }
             }
             catch (Exception e1)
@@ -705,7 +696,6 @@ public class SeamPhaseListener implements PhaseListener
             }
          }
       }
-      return exHandled;
    }
    private Throwable getRootCause(Throwable t) {
 
