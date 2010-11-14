@@ -111,15 +111,13 @@ public class SeamPhaseListener implements PhaseListener
    public void beforePhase(PhaseEvent event)
    {   
       log.trace( "before phase: " + event.getPhaseId() );
+      
+      FacesLifecycle.setPhaseId( event.getPhaseId() );
       if(hasExceptions(event.getFacesContext()))
       {
          handleException(event.getFacesContext());
-         afterRenderResponse(event.getFacesContext());
-         if(!event.getFacesContext().getResponseComplete())
-            event.getFacesContext().responseComplete();
          return;
       }
-      FacesLifecycle.setPhaseId( event.getPhaseId() );
       try
       {
          if ( isPortletRequest(event) )
@@ -199,7 +197,10 @@ public class SeamPhaseListener implements PhaseListener
       {
          handleException(event.getFacesContext());
          handleTransactionsAfterPhase(event);
-         afterRenderResponse(event.getFacesContext());
+         if ( event.getPhaseId() == RESTORE_VIEW )
+            afterResponseComplete(event.getFacesContext());
+         else
+            afterRenderResponse(event.getFacesContext());
          if(!event.getFacesContext().getResponseComplete())
             event.getFacesContext().responseComplete();
          return;
@@ -242,6 +243,7 @@ public class SeamPhaseListener implements PhaseListener
 
    private void afterServletPhase(PhaseEvent event)
    {
+   
       FacesContext facesContext = event.getFacesContext();
       
       if ( event.getPhaseId() == RESTORE_VIEW )
@@ -262,6 +264,7 @@ public class SeamPhaseListener implements PhaseListener
       FacesMessages.afterPhase();
       
       handleTransactionsAfterPhase(event);
+      
       if ( event.getPhaseId() == RENDER_RESPONSE )
       {
          afterRenderResponse(facesContext);
@@ -299,12 +302,6 @@ public class SeamPhaseListener implements PhaseListener
          // writeConversationIdToResponse(
          // facesContext.getExternalContext().getResponse() );
          afterRenderResponse(event.getFacesContext());
-      }
-      else if ( event.getPhaseId() == RESTORE_VIEW )
-      {
-         afterRenderResponse(event.getFacesContext());
-         if(!event.getFacesContext().getResponseComplete())
-            event.getFacesContext().responseComplete();
       }
       else if ( (null != portletPhase && "ActionPhase".equals(portletPhase.toString()) )
              && (event.getPhaseId() == INVOKE_APPLICATION
