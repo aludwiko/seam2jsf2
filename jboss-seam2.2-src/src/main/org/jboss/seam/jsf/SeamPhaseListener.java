@@ -195,14 +195,20 @@ public class SeamPhaseListener implements PhaseListener
       log.trace( "after phase: " + event.getPhaseId() );
       if(hasExceptions(event.getFacesContext()))
       {
+         if ( event.getPhaseId() == RESTORE_VIEW )
+         {
+            FacesLifecycle.resumePage();
+            Map parameters = event.getFacesContext().getExternalContext().getRequestParameterMap();
+            ConversationPropagation.instance().restoreConversationId(parameters);
+            Manager.instance().restoreConversation();
+            FacesLifecycle.resumeConversation( event.getFacesContext().getExternalContext() );
+         }
          handleException(event.getFacesContext());
          handleTransactionsAfterPhase(event);
-         if ( event.getPhaseId() == RESTORE_VIEW )
-            afterResponseComplete(event.getFacesContext());
-         else
-            afterRenderResponse(event.getFacesContext());
+         afterRenderResponse(event.getFacesContext());
          if(!event.getFacesContext().getResponseComplete())
             event.getFacesContext().responseComplete();
+         FacesLifecycle.clearPhaseId();
          return;
       }
       try
