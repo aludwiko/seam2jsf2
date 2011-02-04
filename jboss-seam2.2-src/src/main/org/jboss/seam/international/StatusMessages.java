@@ -9,11 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.validation.ConstraintViolation;
-
 import org.jboss.seam.Component;
-
 import org.jboss.seam.international.StatusMessage.Severity;
 
 /**

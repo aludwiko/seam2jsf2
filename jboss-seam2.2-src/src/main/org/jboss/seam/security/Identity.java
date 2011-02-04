@@ -41,7 +41,7 @@ import org.jboss.seam.web.Session;
  */
 @Name("org.jboss.seam.security.identity")
 @Scope(SESSION)
-@Install(value=false,precedence = BUILT_IN)
+@Install(precedence = BUILT_IN)
 @BypassInterceptors
 @Startup
 public class Identity implements Serializable

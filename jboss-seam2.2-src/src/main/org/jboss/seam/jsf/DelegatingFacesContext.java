@@ -3,7 +3,6 @@ package org.jboss.seam.jsf;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.el.ELContext;
 import javax.faces.application.Application;
 import javax.faces.application.FacesMessage;
 import javax.faces.application.FacesMessage.Severity;
@@ -47,6 +46,14 @@ public class DelegatingFacesContext extends FacesContext
    public Application getApplication()
    {
       return delegate.getApplication();
+   }
+   
+   @Override
+   public Map<Object, Object> getAttributes() {
+      // FIXME: due JSF 2 new method for
+      // javax.faces.context.FacesContext.getAttributes() and non existent
+      // JSF 1.2 equivalent method it returns empty Map without delegating call
+      return delegate.getAttributes();
    }
 
 

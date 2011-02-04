@@ -35,7 +35,7 @@ import org.jboss.seam.util.EnumerationIterator;
 /**
  * @author Gavin King
  * @author <a href="mailto:theute@jboss.org">Thomas Heute</a>
- * @version $Revision: 13480 $
+ * @version $Revision: 13963 $
  */
 public class MockExternalContext extends ExternalContext
 {

@@ -1,4 +1,4 @@
-//$Id: IndexerAction.java 6551 2007-10-16 19:19:22Z nrichards $
+//$Id: IndexerAction.java 13977 2011-01-07 17:14:55Z sannegrinovero $
 package com.jboss.dvd.seam;
 
 import java.util.Date;
@@ -19,7 +19,9 @@ import org.jboss.seam.annotations.Scope;
 import org.jboss.seam.annotations.Startup;
 
 /**
- * Re index the needed entities
+ * Re index the needed entities.
+ * (Old version: see IndexerAction implementation in the
+ * jboss6 additional source folder to see usage of new Search API)
  *
  * @author Emmanuel Bernard
  */
@@ -27,6 +29,7 @@ import org.jboss.seam.annotations.Startup;
 @Stateful
 @Scope(ScopeType.APPLICATION)
 @Startup
+@Deprecated
 public class IndexerAction implements Indexer
 {
    private Date lastIndexingTime;
