@@ -124,6 +124,11 @@ public class SpringTransaction extends AbstractUserTransaction
          getPlatformTransactionManagerRequired().commit(currentTransaction);
          success = true;
       }
+      catch(Exception e)
+      {
+         e.printStackTrace();
+         throw new SystemException(e.toString());
+      }
       finally
       {
          currentTransaction = null;
