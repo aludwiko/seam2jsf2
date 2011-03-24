@@ -17,6 +17,7 @@ import org.jboss.seam.mock.MockHttpServletRequest;
 import org.jboss.seam.mock.MockHttpServletResponse;
 import org.jboss.seam.ui.util.JSF;
 
+import com.sun.faces.application.ApplicationAssociate;
 import com.sun.faces.facelets.Facelet;
 import com.sun.faces.facelets.impl.DefaultFaceletFactory;
 import com.sun.faces.facelets.impl.DefaultResourceResolver;
@@ -126,8 +127,9 @@ public class RendererRequest
       {
          throw new IllegalArgumentException("resource doesn't exist: " + viewId);
       }
-      return new DefaultFaceletFactory(FaceletCompiler.instance(), new DefaultResourceResolver())
-               .getFacelet(url);
+      return ApplicationAssociate.getCurrentInstance().getFaceletFactory().getFacelet(url);
+     // return new DefaultFaceletFactory(FaceletCompiler.instance(), new DefaultResourceResolver())
+     //          .getFacelet(url);
    }
 
    /**

@@ -23,6 +23,7 @@ import org.jboss.seam.contexts.Contexts;
 import org.jboss.seam.log.LogProvider;
 import org.jboss.seam.log.Logging;
 
+import com.sun.faces.application.ApplicationAssociate;
 import com.sun.faces.facelets.compiler.Compiler;
 import com.sun.faces.facelets.compiler.SAXCompiler;
 import javax.faces.view.facelets.TagDecorator;
@@ -38,21 +39,22 @@ import com.sun.faces.facelets.util.ReflectionUtil;
 public class FaceletCompiler
 {
    
-   private LogProvider log = Logging.getLogProvider(FaceletCompiler.class);
+  // private LogProvider log = Logging.getLogProvider(FaceletCompiler.class);
    private Compiler compiler;
    
    @Create
    public void create()
    {
-      compiler = new SAXCompiler();
+      //compiler = new SAXCompiler();
      // fill the necessary parameters 
-      initializeCompiler(compiler);
+     // initializeCompiler(compiler);
+      compiler = ApplicationAssociate.getCurrentInstance().getCompiler();
    }
    
    /*
     * This method cribbed from FaceletViewHandler 
     */
-   protected void initializeCompiler(Compiler compiler) 
+   /*protected void initializeCompiler(Compiler compiler) 
    {
       FacesContext facesContext = FacesContext.getCurrentInstance();
       ExternalContext externalContext = facesContext.getExternalContext();
@@ -114,7 +116,7 @@ public class FaceletCompiler
       {
          compiler.setTrimmingComments(true);
       }
-   }
+   }*/
    
    @Unwrap
    public Compiler unwrap()
